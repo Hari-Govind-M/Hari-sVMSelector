@@ -4,107 +4,24 @@
   <meta charset="UTF-8">
   <title>Azure VM Size Finder</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- Microsoft Fluent-inspired styling (light, modern, with Fluent font & colors) -->
   <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600&display=swap" rel="stylesheet">
   <style>
-    body {
-      font-family: 'Segoe UI', Arial, sans-serif;
-      background: #f3f2f1;
-      margin: 0;
-      min-height: 100vh;
-    }
-    .container {
-      max-width: 700px;
-      margin: 40px auto;
-      background: #fff;
-      border-radius: 18px;
-      box-shadow: 0 4px 32px rgba(0,0,0,0.08);
-      padding: 36px 32px;
-    }
-    h1 {
-      color: #0078d4;
-      font-weight: 600;
-      font-size: 2rem;
-      margin-bottom: 16px;
-      letter-spacing: -.5px;
-    }
-    label {
-      display: block;
-      margin-top: 18px;
-      font-size: 1.04rem;
-      color: #323130;
-      margin-bottom: 4px;
-    }
-    input, select {
-      font-family: 'Segoe UI', Arial, sans-serif;
-      font-size: 1.06rem;
-      padding: 6px 12px;
-      border-radius: 8px;
-      border: 1px solid #c8c6c4;
-      margin-bottom: 12px;
-      width: 100%;
-      box-sizing: border-box;
-      background: #f3f2f1;
-      transition: border .2s;
-    }
-    input:focus, select:focus {
-      border: 1.5px solid #0078d4;
-      outline: none;
-    }
-    button {
-      background: #0078d4;
-      color: white;
-      font-size: 1.09rem;
-      font-weight: 600;
-      padding: 10px 28px;
-      border: none;
-      border-radius: 9px;
-      cursor: pointer;
-      margin-top: 14px;
-      transition: background .17s;
-      box-shadow: 0 2px 6px rgba(0,120,212,0.08);
-    }
-    button:hover {
-      background: #005fa1;
-    }
-    table {
-      margin-top: 30px;
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 1rem;
-      background: #faf9f8;
-      border-radius: 10px;
-      overflow: hidden;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
-    }
-    th, td {
-      padding: 12px 10px;
-      border-bottom: 1px solid #f3f2f1;
-      text-align: left;
-    }
-    th {
-      background: #f3f2f1;
-      color: #2b88d8;
-      font-weight: 600;
-      letter-spacing: .2px;
-    }
-    tr:last-child td {
-      border-bottom: none;
-    }
-    .match-badge {
-      display: inline-block;
-      font-weight: 600;
-      padding: 4px 10px;
-      border-radius: 8px;
-      background: #d0e7fa;
-      color: #0078d4;
-      font-size: 0.98rem;
-    }
-    @media (max-width: 600px) {
-      .container { padding: 10px 4vw; }
-      th, td { padding: 9px 3px; font-size: 0.97rem;}
-      h1 { font-size: 1.3rem;}
-    }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f3f2f1; margin: 0; min-height: 100vh;}
+    .container { max-width: 700px; margin: 40px auto; background: #fff; border-radius: 18px; box-shadow: 0 4px 32px rgba(0,0,0,0.08); padding: 36px 32px;}
+    h1 { color: #0078d4; font-weight: 600; font-size: 2rem; margin-bottom: 16px; letter-spacing: -.5px;}
+    label { display: block; margin-top: 18px; font-size: 1.04rem; color: #323130; margin-bottom: 4px;}
+    input, select { font-family: 'Segoe UI', Arial, sans-serif; font-size: 1.06rem; padding: 6px 12px; border-radius: 8px; border: 1px solid #c8c6c4; margin-bottom: 12px; width: 100%; box-sizing: border-box; background: #f3f2f1; transition: border .2s;}
+    input:focus, select:focus { border: 1.5px solid #0078d4; outline: none;}
+    button { background: #0078d4; color: white; font-size: 1.09rem; font-weight: 600; padding: 10px 28px; border: none; border-radius: 9px; cursor: pointer; margin-top: 14px; transition: background .17s; box-shadow: 0 2px 6px rgba(0,120,212,0.08);}
+    button:hover { background: #005fa1;}
+    table { margin-top: 30px; width: 100%; border-collapse: collapse; font-size: 1rem; background: #faf9f8; border-radius: 10px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.05);}
+    th, td { padding: 12px 10px; border-bottom: 1px solid #f3f2f1; text-align: left;}
+    th { background: #f3f2f1; color: #2b88d8; font-weight: 600; letter-spacing: .2px;}
+    tr:last-child td { border-bottom: none;}
+    .match-badge { display: inline-block; font-weight: 600; padding: 4px 10px; border-radius: 8px; background: #d0e7fa; color: #0078d4; font-size: 0.98rem;}
+    .exact-match { background: #c8e6c9; color: #256029; border: 1px solid #43a047; margin-left: 8px; }
+    .search-across { margin-top: 6px; margin-bottom: 12px; display: flex; align-items: center;}
+    @media (max-width: 600px) { .container { padding: 10px 4vw; } th, td { padding: 9px 3px; font-size: 0.97rem;} h1 { font-size: 1.3rem;}}
   </style>
 </head>
 <body>
@@ -115,16 +32,18 @@
       <select id="region" name="region" required>
         <option value="">Loading...</option>
       </select>
+      <div class="search-across">
+        <input type="checkbox" id="allregions" name="allregions" style="width: 18px; height: 18px; margin-right: 7px;">
+        <label for="allregions" style="margin-bottom:0; margin-top:0; font-size:1.01rem;">Search across all regions</label>
+      </div>
       <label for="vcpu">vCPU Cores</label>
       <input type="number" id="vcpu" name="vcpu" min="1" required placeholder="e.g., 4" />
       <label for="ram">Memory (GB)</label>
       <input type="number" id="ram" name="ram" step="0.1" min="0.5" required placeholder="e.g., 16" />
       <button type="submit">Find Closest VM Sizes</button>
     </form>
-
     <div id="results"></div>
   </div>
-
   <script>
     let vmData = {};
     const regionDropdown = document.getElementById('region');
@@ -149,37 +68,50 @@
       });
 
     // Matching algorithm
-    function getTopMatches(vmSizes, userVcpu, userRam) {
-      // Match both exact and closest above/below values, sorted by match %
-      return vmSizes.map(vm => {
+    function getTopMatches(vmList, userVcpu, userRam) {
+      return vmList.map(vm => {
+        const vcpuExact = (vm.NumberOfCores == userVcpu);
+        const ramExact = (parseFloat(vm.MemoryInGB) == userRam);
         const vcpuPct = Math.min(userVcpu, vm.NumberOfCores) / Math.max(userVcpu, vm.NumberOfCores);
-        const ramPct = Math.min(userRam, vm.MemoryInGB) / Math.max(userRam, vm.MemoryInGB);
+        const ramPct = Math.min(userRam, parseFloat(vm.MemoryInGB)) / Math.max(userRam, parseFloat(vm.MemoryInGB));
         const matchPct = Math.round(((vcpuPct + ramPct) / 2) * 100);
-        return { ...vm, matchPct };
+        return { ...vm, matchPct, exact: (vcpuExact && ramExact) };
       })
-      // Show exact or closest above/below, sorted by best match
-      .sort((a, b) => b.matchPct - a.matchPct)
+      .sort((a, b) => {
+        if (b.exact && !a.exact) return 1;
+        if (a.exact && !b.exact) return -1;
+        return b.matchPct - a.matchPct;
+      })
       .slice(0, 5);
     }
 
     document.getElementById('searchForm').onsubmit = function (e) {
       e.preventDefault();
       resultsDiv.innerHTML = '';
-      const region = regionDropdown.value;
       const userVcpu = parseInt(document.getElementById('vcpu').value, 10);
       const userRam = parseFloat(document.getElementById('ram').value);
+      const searchAll = document.getElementById('allregions').checked;
+      let matches = [];
 
-      if (!region || !userVcpu || !userRam) {
+      if (!userVcpu || !userRam) {
         resultsDiv.innerHTML = "<p>Please fill all fields.</p>";
         return;
       }
-      if (!vmData[region]) {
-        resultsDiv.innerHTML = "<p>No data for selected region.</p>";
-        return;
+      if (searchAll) {
+        // Flatten all VMs, adding region to each
+        let allVMs = [];
+        for (const region in vmData) {
+          allVMs.push(...vmData[region].map(vm => ({...vm, Region: region})));
+        }
+        matches = getTopMatches(allVMs, userVcpu, userRam);
+      } else {
+        const region = regionDropdown.value;
+        if (!vmData[region]) {
+          resultsDiv.innerHTML = "<p>No data for selected region.</p>";
+          return;
+        }
+        matches = getTopMatches(vmData[region].map(vm => ({...vm, Region: region})), userVcpu, userRam);
       }
-
-      // Prepare top matches
-      const matches = getTopMatches(vmData[region], userVcpu, userRam);
 
       if (!matches.length) {
         resultsDiv.innerHTML = "<p>No matching VM sizes found.</p>";
@@ -194,6 +126,7 @@
               <th>VM Size</th>
               <th>vCPUs</th>
               <th>RAM (GB)</th>
+              <th>Region</th>
               <th>Match %</th>
             </tr>
           </thead>
@@ -202,9 +135,12 @@
       matches.forEach(vm => {
         html += `
           <tr>
-            <td>${vm.Name}</td>
+            <td>${vm.Name}
+              ${vm.exact ? '<span class="match-badge exact-match">Exact Match</span>' : ''}
+            </td>
             <td>${vm.NumberOfCores}</td>
             <td>${vm.MemoryInGB}</td>
+            <td>${vm.Region}</td>
             <td><span class="match-badge">${vm.matchPct}%</span></td>
           </tr>
         `;
