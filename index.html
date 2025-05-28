@@ -7,7 +7,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600&display=swap" rel="stylesheet">
   <style>
     body { font-family: 'Segoe UI', Arial, sans-serif; background: #f3f2f1; margin: 0; min-height: 100vh;}
-    .container { max-width: 700px; margin: 40px auto; background: #fff; border-radius: 18px; box-shadow: 0 4px 32px rgba(0,0,0,0.08); padding: 36px 32px;}
+    .container { max-width: 720px; margin: 40px auto; background: #fff; border-radius: 18px; box-shadow: 0 4px 32px rgba(0,0,0,0.08); padding: 36px 32px;}
     h1 { color: #0078d4; font-weight: 600; font-size: 2rem; margin-bottom: 16px; letter-spacing: -.5px;}
     label { display: block; margin-top: 18px; font-size: 1.04rem; color: #323130; margin-bottom: 4px;}
     input, select { font-family: 'Segoe UI', Arial, sans-serif; font-size: 1.06rem; padding: 6px 12px; border-radius: 8px; border: 1px solid #c8c6c4; margin-bottom: 12px; width: 100%; box-sizing: border-box; background: #f3f2f1; transition: border .2s;}
@@ -20,6 +20,7 @@
     tr:last-child td { border-bottom: none;}
     .match-badge { display: inline-block; font-weight: 600; padding: 4px 10px; border-radius: 8px; background: #d0e7fa; color: #0078d4; font-size: 0.98rem;}
     .exact-match { background: #c8e6c9; color: #256029; border: 1px solid #43a047; margin-left: 8px; }
+    .gpu-badge { background: #ffecb3; color: #bfa900; border: 1px solid #ffe082; margin-left: 6px; font-size: 0.93rem;}
     .search-across { margin-top: 6px; margin-bottom: 12px; display: flex; align-items: center;}
     @media (max-width: 600px) { .container { padding: 10px 4vw; } th, td { padding: 9px 3px; font-size: 0.97rem;} h1 { font-size: 1.3rem;}}
   </style>
@@ -35,6 +36,16 @@
       <div class="search-across">
         <input type="checkbox" id="allregions" name="allregions" style="width: 18px; height: 18px; margin-right: 7px;">
         <label for="allregions" style="margin-bottom:0; margin-top:0; font-size:1.01rem;">Search across all regions</label>
+      </div>
+      <label for="cputype">Processor Type</label>
+      <select id="cputype" name="cputype">
+        <option value="any">Any</option>
+        <option value="intel">Intel</option>
+        <option value="amd">AMD</option>
+      </select>
+      <div style="margin: 6px 0 8px 0;">
+        <input type="checkbox" id="gpu" name="gpu" style="width: 18px; height: 18px; margin-right: 7px;">
+        <label for="gpu" style="margin-bottom:0; font-size:1.01rem;">Require GPU</label>
       </div>
       <label for="vcpu">vCPU Cores</label>
       <input type="number" id="vcpu" name="vcpu" min="1" required placeholder="e.g., 4" />
@@ -67,6 +78,26 @@
         regionDropdown.innerHTML = '<option value="">Failed to load regions</option>';
       });
 
+    // --- CPU and GPU matching functions ---
+    function matchesCpuType(vmName, cpuType) {
+      if(cpuType === "any") return true;
+      // AMD: Dasv, Easv, _a, _amds, eav, etc.
+      if(cpuType === "amd")
+        return /(_a|_amds|easv|dasv|eav|av4|ad|amd)/i.test(vmName);
+      // Intel: No AMD-indicating patterns and not GPU
+      if(cpuType === "intel")
+        return !(/(_a|_amds|easv|dasv|eav|av4|ad|amd)/i.test(vmName)) && !matchesGpu(vmName, true);
+      return true;
+    }
+    function matchesGpu(vmName, requireGPU) {
+      if(!requireGPU) return true;
+      // Look for names like NC, ND, NV, NCas, NVads, NDas etc.
+      return /^n[vcd]/i.test(vmName) || /_nc|_nv|_nd|_ncas|_nvad|_ndas/i.test(vmName);
+    }
+    function hasGpu(vmName) {
+      return matchesGpu(vmName, true);
+    }
+
     // Matching algorithm
     function getTopMatches(vmList, userVcpu, userRam) {
       return vmList.map(vm => {
@@ -91,27 +122,35 @@
       const userVcpu = parseInt(document.getElementById('vcpu').value, 10);
       const userRam = parseFloat(document.getElementById('ram').value);
       const searchAll = document.getElementById('allregions').checked;
+      const cpuType = document.getElementById('cputype').value;
+      const requireGPU = document.getElementById('gpu').checked;
       let matches = [];
 
       if (!userVcpu || !userRam) {
         resultsDiv.innerHTML = "<p>Please fill all fields.</p>";
         return;
       }
+
+      // Gather all filtered VMs
+      let filteredVMs = [];
       if (searchAll) {
-        // Flatten all VMs, adding region to each
-        let allVMs = [];
         for (const region in vmData) {
-          allVMs.push(...vmData[region].map(vm => ({...vm, Region: region})));
+          filteredVMs.push(...vmData[region].map(vm => ({...vm, Region: region})));
         }
-        matches = getTopMatches(allVMs, userVcpu, userRam);
       } else {
         const region = regionDropdown.value;
         if (!vmData[region]) {
           resultsDiv.innerHTML = "<p>No data for selected region.</p>";
           return;
         }
-        matches = getTopMatches(vmData[region].map(vm => ({...vm, Region: region})), userVcpu, userRam);
+        filteredVMs = vmData[region].map(vm => ({...vm, Region: region}));
       }
+      // Filter by CPU type and GPU requirements
+      filteredVMs = filteredVMs.filter(vm =>
+        matchesCpuType(vm.Name, cpuType) && matchesGpu(vm.Name, requireGPU)
+      );
+
+      matches = getTopMatches(filteredVMs, userVcpu, userRam);
 
       if (!matches.length) {
         resultsDiv.innerHTML = "<p>No matching VM sizes found.</p>";
@@ -135,8 +174,10 @@
       matches.forEach(vm => {
         html += `
           <tr>
-            <td>${vm.Name}
+            <td>
+              ${vm.Name}
               ${vm.exact ? '<span class="match-badge exact-match">Exact Match</span>' : ''}
+              ${hasGpu(vm.Name) ? '<span class="gpu-badge">GPU</span>' : ''}
             </td>
             <td>${vm.NumberOfCores}</td>
             <td>${vm.MemoryInGB}</td>
