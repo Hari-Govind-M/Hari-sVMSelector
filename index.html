@@ -78,17 +78,25 @@
         regionDropdown.innerHTML = '<option value="">Failed to load regions</option>';
       });
 
-    // --- CPU and GPU matching functions ---
+    // Improved AMD detection: covers B4als, Dasv4, Eav4, EASv4, etc.
+    function isAmdVm(vmName) {
+      vmName = vmName.toLowerCase().replace(/^standard_/, "");
+      // Covers b4als_v2, dasv4, easv4, d2as_v4, etc. and other common AMD patterns
+      return (
+        /(^b\d+als|[a-z]+\d+als|[a-z]+\d+as|[a-z]+\d+a\d*v\d*|easv|dasv|eav|_a|_amds|amd)/i.test(vmName)
+      );
+    }
+
     function matchesCpuType(vmName, cpuType) {
       if(cpuType === "any") return true;
-      // AMD: Dasv, Easv, _a, _amds, eav, etc.
       if(cpuType === "amd")
-        return /(_a|_amds|easv|dasv|eav|av4|ad|amd)/i.test(vmName);
-      // Intel: No AMD-indicating patterns and not GPU
+        return isAmdVm(vmName);
       if(cpuType === "intel")
-        return !(/(_a|_amds|easv|dasv|eav|av4|ad|amd)/i.test(vmName)) && !matchesGpu(vmName, true);
+        return !isAmdVm(vmName) && !matchesGpu(vmName, true);
       return true;
     }
+
+    // Filtering for GPU
     function matchesGpu(vmName, requireGPU) {
       if(!requireGPU) return true;
       // Look for names like NC, ND, NV, NCas, NVads, NDas etc.
